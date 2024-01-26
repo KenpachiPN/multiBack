@@ -1,13 +1,8 @@
 <?php
-
-error_reporting(E_ALL);
-ini_set('log_errors', 1);
-
+phpinfo();
 header('Content-Type: application/json');
-header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: POST');
 header('Access-Control-Allow-Headers: Content-Type');
+
 
 // Directorio donde se guardará el archivo en el servidor
 $directorioDestino = __DIR__ . '/Multimedia/';
