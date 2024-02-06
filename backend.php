@@ -2,9 +2,6 @@
 header('Content-Type: application/json');
 header('Access-Control-Allow-Headers: Content-Type');
 
-// Directorio donde se guardará el archivo en el servidor
-$directorioDestino = __DIR__ . '/Multimedia/';
-
 // Recibe los datos del formulario
 $user = isset($_POST['usuario']) ? trim(strtolower($_POST['usuario'])) : '';
 $passwd = isset($_POST['contrasena']) ? trim($_POST['contrasena']) : '';
@@ -18,7 +15,7 @@ $fecha = date("Y-m-d H:i:s");
 // Directorio donde se guardará el archivo en el servidor
 $rutaRelativa = '/Multimedia/' . $deposito . '/';
 // Directorio donde está el JSON
-$rutaJson = '/Multimedia/' . $deposito . '/' . $deposito . '.json';
+$rutaJson = __DIR__ . '/Multimedia/' . $deposito . '/' . $deposito . '.json';
 
 if (empty($user) || empty($passwd) || empty($deposito) || empty($recaptchaResponse) || $multi === null) {
     $formDataErr = [
@@ -36,20 +33,28 @@ if (empty($user) || empty($passwd) || empty($deposito) || empty($recaptchaRespon
     exit;
 }
 
+// Obtener los datos del JSON
+$fileJson = json_decode(file_get_contents($rutaJson), true);
+
+// Obtener el último número utilizado
+$contador = empty($fileJson) ? 1 : $fileJson[count($fileJson) - 1]['data']['Numero'];
+$contador++;  // Incrementar el contador
+
+// Crear un aray para almacenar el archivo
 $files = [];
 
-// Obtener los datos del JSON
-$fileJson = json_decode(file_get_contents($rutaJson));
-
-
-
 foreach ($_FILES['files']['name'] as $i => $files_name) {
-    $rutaDestino = __DIR__ . $rutaRelativa . basename($files_name);
-    $rutaDestinoJson = __DIR__ . $rutaJson;
+    // Obtener la extensión del archivo
+    $extension = pathinfo($files_name, PATHINFO_EXTENSION);
+    // Adjuntar el nuevo nombre
+    $nuevoNombre = $contador . '.' . $extension;
+    $rutaDestino = __DIR__ . $rutaRelativa . basename($nuevoNombre);
+    $rutaDestinoJson = $rutaJson;
     if (move_uploaded_file($_FILES['files']['tmp_name'][$i], $rutaDestino)) {
         $files[] = [
             'name' => $files_name,
-            'ruta' => $rutaRelativa . $files_name
+            'ruta' => $rutaRelativa . $nuevoNombre,
+            'nuevo nombre' => $nuevoNombre,
         ];
         $formData = [
             'success' => true,
@@ -63,8 +68,12 @@ foreach ($_FILES['files']['name'] as $i => $files_name) {
                 'Fecha subida' => $fecha
             ],
         ];
-        // Agregar los nuevos datos al array
-        $fileJson[] = $formData['data'];
+        // Actualizar el contador en el array
+        $fileJson[] = ['data' => $formData['data']];
+        $fileJson[count($fileJson) - 1]['data']['Numero'] = $contador;
+
+        // Incrementar el contador
+        $contador++;
         // Codificar el array completo en formato JSON
         $jsonData = json_encode($fileJson, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
         // Guardar el array completo en el archivo JSON
